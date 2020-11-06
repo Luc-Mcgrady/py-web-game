@@ -1,0 +1,11 @@
+* {font-size:5vh; font-family:Arial}
+
+div.header {border-style: outset;left:1%; right:1%;margin-bottom:1%}
+div.content * {display: block; margin-left: auto; margin-right: auto; margin-top:1%}
+div.match_grid {display: grid; grid-template-columns: 20% auto 20%}
+div.match_grid > * {font-size:3vh; border-style:solid; margin: 0px;display: inline-block; border-collapse: collapse}
+
+input.logout { float:right; margin:2.5vh;}
+h3 {display:inline-block; margin:2.5vh;}
+
+p, input {text-align:center; margin: auto;}

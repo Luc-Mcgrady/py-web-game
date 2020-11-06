@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Card game</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+</head>
+
+<body>
+    <div class="header">
+        {% if username %}
+        <h3>Hello "{{username}}"</h3>
+        <input type="button" onclick="window.location.href=&quot{{url_for('logout')}}&quot" value="log out" class="logout">
+        {% else %}
+        <h3>You have no <a href="{{url_for('login')}}">nickname</a></h3>
+        <input type="button" onclick="window.location.href=&quot{{url_for('login')}}&quot" value="log in" class="logout">
+        {% endif %}
+        <input type="button" onclick="window.location.href=&quot{{url_for('index')}}&quot" value="home" class="logout">
+    </div>
+</body>
