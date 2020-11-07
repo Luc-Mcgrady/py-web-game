@@ -20,7 +20,8 @@ def make_server():
 
     headerfooter = quickflask.TemplateCombiner(["header.html"], None, {
         "username": lambda: user["name"],
-        "logedin": user.b_logged_in
+        "logedin": user.b_logged_in,
+        "inroom": lambda: user["room"] is not None,
     })
 
     def redirect_login():
@@ -43,8 +44,11 @@ def make_server():
 
     @server.route("/logout")
     def logout():
-        user.logout()
-        return flask.redirect("/")
+        if user["room"] is None:
+            user.logout()
+            return flask.redirect("/")
+        else:
+            return flask.redirect("/play/room")
 
     @server.route("/login", methods=["GET", "POST"])
     def login():
@@ -59,7 +63,7 @@ def make_server():
     def matchlist():
         print(room.rooms)
         return headerfooter("game/matchlist.html", all_redirects,
-                            lobbys=sorted(list(room.rooms.items()), key=lambda x: len(x[1]["uids"]))
+                            lobbys=sorted(list(room.rooms.items()), key=lambda x: -len(x[1]["uids"]))
                             )
 
     @server.route("/play/createroom", methods=["GET", "POST"])

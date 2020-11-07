@@ -10,13 +10,21 @@
 
 <body>
     <div class="header">
-        <input type="button" onclick="window.location.href=&quot{{url_for('index')}}&quot" value="home" class="logout">
+        {% if not inroom %}
+            <input type="button" onclick="window.location.href=&quot{{url_for('index')}}&quot" value="home" class="logout">
+        {% endif %}
         {% if logedin %}
-        <input type="button" onclick="window.location.href=&quot{{url_for('logout')}}&quot" value="log out" class="logout">
-        <h3>Hello "{{username}}"</h3>
+            {% if not inroom %}
+                <input type="button" onclick="window.location.href=&quot{{url_for('logout')}}&quot" value="log out" class="logout">
+            {% else %}
+                <input type="button" value="Leave" onclick='socket.emit("leave")' class="logout">
+            {% endif %}
+            <h3>Hello "{{username}}"</h3>
         {% else %}
-        <input type="button" onclick="window.location.href=&quot{{url_for('login')}}&quot" value="log in" class="logout">
-        <h3>You have no <a href="{{url_for('login')}}">nickname</a></h3>
+            {% if not inroom %}
+                <input type="button" onclick="window.location.href=&quot{{url_for('login')}}&quot" value="log in" class="logout">
+            {% endif %}
+            <h3>You have no <a href="{{url_for('login')}}">nickname</a></h3>
         {% endif %}
 
     </div>
