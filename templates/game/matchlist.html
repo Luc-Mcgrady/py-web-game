@@ -1,0 +1,15 @@
+
+<body>
+    <div class="match_grid">
+        <p>Players</p>
+        <p>Host Name</p>
+        <p>Join</p>
+        {% for game in lobbys %}
+        <p>{{ game[1].uids|length }}</p>
+        <p>{{ game[1].name }}</p>
+        <a onclick="socket.emit('join',{{ game[0] }})" href="javascript:void(0);">Join</a>
+        {% endfor %}
+    </div>
+    <input type="button" onclick="document.location.href='/play/createroom'" value="createroom" class="loose_button">
+
+</body>

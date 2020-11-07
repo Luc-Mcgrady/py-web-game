@@ -1,7 +1,11 @@
 import flask
 from flask import request, session
-import json
+from copy import deepcopy
 import flask_socketio as socketio
+
+
+# import logging
+# logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 
 class UserBase:
@@ -14,29 +18,8 @@ class UserBase:
 
         self.server = flaskserver
         self.userkeys = userdefaults
-        self.users = {}  # Dict as when a user logs off their id wont change
+        self.users = {}  # Dict as when a user logs off their room_id wont change
         self.socket = socketio.SocketIO(self.server)
-        self._message_handlers = {"void": lambda a: None}
-
-        this = self
-
-        @self.socket.on("json")
-        @self.socket.on("message")
-        def message_handle(json):
-            """Handle the messages sent from the client to the server"""
-            print("Got json: %s" % json)
-
-            assert type(json) == dict
-
-            if "type" not in json:
-                raise KeyError("Malformed socketio request, %s , \"type\" key required" % json)
-
-            if json["type"] in this._message_handlers:
-                resp = this._message_handlers[json["type"]](json)
-                if resp is not None:
-                    this.socket.send(resp)
-            else:
-                raise KeyError("Missing json handler '%s'" % json)
 
     def current_user(self):
         try:
@@ -52,7 +35,7 @@ class UserBase:
 
     @staticmethod
     def logout():
-        session["uid"] = None
+        session.pop("uid", None)
 
     def b_logged_in(self):
         """better than if .current_user() is none because it is for cookies rather than serverside storage"""
@@ -60,7 +43,10 @@ class UserBase:
 
     def currentuser_set_attribute(self, key, val, localstorage: bool = False):
 
-        assert key in self.current_user()
+        assert key in self.current_user(), """
+The key "%s" was not already in the template of a user .
+ensure that all users keys remain consistant.
+The fix would be to add "%s" to the default template""" % key
         self.current_user()[key] = val
 
         if localstorage:
@@ -84,14 +70,64 @@ class UserBase:
     def __setitem__(self, key, value):
         self.currentuser_set_attribute(key, value)
 
-    def new_message_handler(self, json_type):
-        """decorator for the functions that deal with socket messages
-        the message should have a type json attribute which is what will direct it to the function that is passed in"""
 
-        def wrapper(func):
-            self._message_handlers[json_type] = func
+class RoomBase:
+    def __init__(self, userbase: UserBase, default_roomkeys=None):
 
-        return wrapper
+        if default_roomkeys is None:
+            default_roomkeys = {}
+
+        self.rooms = {}
+        self.rooms_len = 0
+        self.user = userbase
+        self.user.userkeys["room"] = None
+
+        assert "uids" not in default_roomkeys, "reserved key 'uids'"
+        self.roomkeys = default_roomkeys
+        self.roomkeys["uids"] = []
+
+        @self.user.socket.on('connect')
+        def re_room():
+            if self.user["room"] is not None:
+                socketio.join_room(self.user["room"])
+
+    def join_room(self, room_id):
+        """Makes the user join a room, returns if the room is new or not"""
+        if self.user["room"] is not None:
+            self.leave_room()
+
+        socketio.join_room(room_id)
+        self.user["room"] = room_id
+
+        self.rooms[room_id]["uids"].append(session["uid"])
+
+    def new_room(self):
+        room_id = self.rooms_len
+        self.rooms_len += 1
+        self.rooms[room_id] = deepcopy(self.roomkeys)
+        return room_id
+
+    def leave_room(self):
+        assert self.user["room"] is not None
+        room_id = self.user["room"]
+        socketio.leave_room(room_id)
+        self.user["room"] = None
+        self.rooms[room_id]["uids"].remove(session["uid"])
+        if len(self.rooms[room_id]["uids"]) < 1:
+            self.rooms.pop(room_id)
+
+    def socket_emit(self, event, *args):
+        socketio.emit(event, *args, room=self.user["room"])
+
+    def __getitem__(self, item):
+        try:
+            return self.rooms[self.user["room"]][item]
+        except KeyError:
+            return None
+
+    def __setitem__(self, key, value):
+        assert key in self.roomkeys
+        self.rooms[self.user["room"]][key] = value
 
 
 class TemplateCombiner:
@@ -114,8 +150,22 @@ class TemplateCombiner:
         else:
             self.after = after
 
-    def before_template_after(self, template=None, **kwargs):
-        """Main function used to return a template with 2 """
+    def before_template_after(self, template=None, login_redirect_funcs=None, **kwargs):
+        """Main function used to return a template with the header and footer designated on initialisation
+
+        login_redirect_funcs should be an array of funcs that return a flask.redirect or none
+        It will redirect in the priority of going down the list.
+
+        kwargs can be used to add more kwargs than the default one.
+        """
+
+        if login_redirect_funcs is None:
+            login_redirect_funcs = []
+
+        for func in login_redirect_funcs:
+            redirect = func()
+            if redirect is not None:
+                return redirect
 
         kwargs = {**{k: v() for k, v in self.defaultkwargs.items()}, **kwargs}
 
@@ -136,3 +186,11 @@ class TemplateCombiner:
         for template in templates:
             out += flask.render_template(template, **kwargs)
         return out
+
+
+def return_socket(*args, **kwargs):
+    assert "room" not in kwargs
+    return_room = -session["uid"]  # Unique room just in case, untested if just -1 would work
+    socketio.join_room(return_room)
+    socketio.emit(*args,**kwargs,room=return_room)
+    socketio.leave_room(return_room)

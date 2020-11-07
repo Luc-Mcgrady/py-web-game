@@ -4,17 +4,20 @@
     <meta charset="UTF-8">
     <title>Card game</title>
     <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    <script src="/static/js/socket.js"></script>
 </head>
 
 <body>
     <div class="header">
-        {% if username %}
-        <h3>Hello "{{username}}"</h3>
-        <input type="button" onclick="window.location.href=&quot{{url_for('logout')}}&quot" value="log out" class="logout">
-        {% else %}
-        <h3>You have no <a href="{{url_for('login')}}">nickname</a></h3>
-        <input type="button" onclick="window.location.href=&quot{{url_for('login')}}&quot" value="log in" class="logout">
-        {% endif %}
         <input type="button" onclick="window.location.href=&quot{{url_for('index')}}&quot" value="home" class="logout">
+        {% if logedin %}
+        <input type="button" onclick="window.location.href=&quot{{url_for('logout')}}&quot" value="log out" class="logout">
+        <h3>Hello "{{username}}"</h3>
+        {% else %}
+        <input type="button" onclick="window.location.href=&quot{{url_for('login')}}&quot" value="log in" class="logout">
+        <h3>You have no <a href="{{url_for('login')}}">nickname</a></h3>
+        {% endif %}
+
     </div>
 </body>
