@@ -44,9 +44,9 @@ class UserBase:
     def currentuser_set_attribute(self, key, val, localstorage: bool = False):
 
         assert key in self.current_user(), """
-The key "%s" was not already in the template of a user .
+The key "{key}" was not already in the template of a user .
 ensure that all users keys remain consistant.
-The fix would be to add "%s" to the default template""" % key
+The fix would be to add "{key}" to the default template""".format(key=key)
         self.current_user()[key] = val
 
         if localstorage:

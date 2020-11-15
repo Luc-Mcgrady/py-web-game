@@ -3,6 +3,7 @@ from flask import request, session
 import flask_socketio as socketio
 import quickflask
 import os
+import cardgame
 
 
 def make_server():
@@ -11,11 +12,13 @@ def make_server():
 
     user = quickflask.UserBase(server, {
         "name": None,
+        "playerid": None
     })
 
     room = quickflask.RoomBase(user, {
         "name": None,
-        "number": 0
+        "game": None,
+        "open": True,
     })
 
     headerfooter = quickflask.TemplateCombiner(["header.html"], None, {
@@ -23,6 +26,8 @@ def make_server():
         "logedin": user.b_logged_in,
         "inroom": lambda: user["room"] is not None,
     })
+
+    cardgame.init(user, room)
 
     def redirect_login():
         if "uid" not in session:
@@ -61,7 +66,6 @@ def make_server():
 
     @server.route("/play/rooms")
     def matchlist():
-        print(room.rooms)
         return headerfooter("game/matchlist.html", all_redirects,
                             lobbys=sorted(list(room.rooms.items()), key=lambda x: -len(x[1]["uids"]))
                             )
@@ -74,30 +78,42 @@ def make_server():
 
     @server.route("/play/room")
     def gameroom():
-        return headerfooter("game/room.html", [redirect_login], number=room["number"])
+        redirect = redirect_login()
+        if redirect is not None:
+            return redirect
+        return headerfooter("game/room.html", players=room["game"].get_players_attr("name"))
 
     @user.socket.on("create")
     def createroom():
         room_id = room.new_room()
         room.join_room(room_id)
+
         room["name"] = user["name"]
+        room["game"] = cardgame.Game([
+            (cardgame.Card, 10),
+            (cardgame.SpyCard, 3),
+            (cardgame.NukeCard, 2),
+            (cardgame.MultCard, 1),
+        ])
+        user["playerid"] = room["game"].new_player()
 
         quickflask.return_socket('redirect', "/play/room")
 
     @user.socket.on("join")
     def joining(room_id):
-        room.join_room(room_id)
+        if room.rooms[room_id]["open"]:
+            room.join_room(room_id)
+            user["playerid"] = room["game"].new_player()
 
-        quickflask.return_socket('redirect', "/play/room")
+            quickflask.return_socket('redirect', "/play/room")
 
     @user.socket.on("leave")
     def leaving():
         room.leave_room()
         quickflask.return_socket('redirect', "/play/rooms")
 
-    @user.socket.on("button_press")
+    @user.socket.on("game_start")
     def return_button_press():
-        room["number"] += 1
         socket.emit("setnum", room["number"], room=user["room"])
 
     return user.socket, server

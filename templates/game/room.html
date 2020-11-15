@@ -3,5 +3,6 @@
 
 </head>
 <body>
-    <input type="button" id="vartext" value="{{number}}" onclick="socket.emit('button_press')">
+    <input type="button" id="vartext" value="Start game" onclick="socket.emit('game_start')">
+    {{ players }}
 </body>

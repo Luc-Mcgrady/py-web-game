@@ -1,6 +1,8 @@
 import random
+import quickflask
+import webgame
+from webgame import init
 from copy import deepcopy, copy
-
 
 class Card:
     def __init__(self, game):
@@ -77,8 +79,10 @@ class MultCard(Card):
         self.name = "%sx%s" % (self.value, self.get_layer_name())
 
 
-class Player:
+class Player(webgame.WebGamePlayer):
     def __init__(self, game):
+        super().__init__(game)
+
         game: Game
         self.game = game
 
@@ -113,12 +117,16 @@ class Player:
         return [card.name for card in layer]
 
 
-class Game:
-    def __init__(self):
+class Game(webgame.WebGame):
+    def __init__(self, cards_weights=None):
+
+        super().__init__()
+        if cards_weights is None:
+            cards_weights = []
+
         self.boards = []
         self.deck = []
         self.deck_weights = []
-        self.players = []
         self.player_index = 0
         self._started = False
 
@@ -126,6 +134,8 @@ class Game:
         self.start_card_count = 5
 
         self.layer_labels = {0: "A", 1: "B", 2: "C"}
+
+        self.deck_from_tuples(cards_weights)
 
     def deck_add(self, card: Card, weight: int = 1):
         self.deck.append(card)
@@ -156,7 +166,8 @@ class Game:
 
         self.player_index = 0
 
-    def deck_tuples_to_card_weight(self, tuples: list):
+    def deck_from_tuples(self, tuples: list):
+        tuples = [(a(self), b) for a, b in tuples]
         [self.deck_add(*args) for args in tuples]
 
     def start(self):
@@ -167,8 +178,10 @@ class Game:
     def new_player(self):
         """Returns the index of a new player in the self.players array"""
         assert not self._started
-        self.players.append(Player(self))
-        return len(self.players) - 1
+        super().new_player()
+
+    def get_player_type(self):
+        return Player
 
     def current_player(self) -> Player:
         return self.players[self.player_index]
@@ -201,12 +214,12 @@ class Game:
 
 
 if __name__ == '__main__':
-    game = Game()
-    game.deck_tuples_to_card_weight([
-        (Card(game), 7),
-        (SpyCard(game), 2),
-        (NukeCard(game), 1),
-        (MultCard(game), 1),
+    game = Game(None)
+    game.deck_from_tuples([
+        (Card, 7),
+        (SpyCard, 2),
+        (NukeCard, 1),
+        (MultCard, 1),
     ])
     game.new_player()
     game.new_player()

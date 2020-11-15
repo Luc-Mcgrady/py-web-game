@@ -6,8 +6,4 @@ socket.on('connect',() => {
         onbeforeunload = () => {}
         document.location.href = url
     })
-
-    socket.on('setnum',(num) => {
-        document.getElementById("vartext").value = num
-    })
 })
