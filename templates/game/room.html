@@ -1,8 +1,8 @@
 
 <head>
-
+    <script src="/static/js/game.js"></script>
 </head>
 <body>
-    <input type="button" id="vartext" value="Start game" onclick="socket.emit('game_start')">
+    <input type="button" id="vartext" value="Start game" onclick="socket.emit('game_action','start')">
     {{ players }}
 </body>

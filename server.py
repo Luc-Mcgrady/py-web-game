@@ -3,7 +3,7 @@ from flask import request, session
 import flask_socketio as socketio
 import quickflask
 import os
-import cardgame
+import shutthebox
 
 
 def make_server():
@@ -27,7 +27,7 @@ def make_server():
         "inroom": lambda: user["room"] is not None,
     })
 
-    cardgame.init(user, room)
+    shutthebox.init(user, room)
 
     def redirect_login():
         if "uid" not in session:
@@ -67,8 +67,9 @@ def make_server():
     @server.route("/play/rooms")
     def matchlist():
         return headerfooter("game/matchlist.html", all_redirects,
-                            lobbys=sorted(list(room.rooms.items()), key=lambda x: -len(x[1]["uids"]))
-                            )
+                            lobbys=sorted(list(a for a in room.rooms.items() if a[1]["open"]),
+                                          key=lambda x: -len(x[1]["uids"]))
+                            )  # TODO Open feature of webpage instead of ommiting room entirely
 
     @server.route("/play/createroom", methods=["GET", "POST"])
     def creategame():
@@ -81,7 +82,7 @@ def make_server():
         redirect = redirect_login()
         if redirect is not None:
             return redirect
-        return headerfooter("game/room.html", players=room["game"].get_players_attr("name"))
+        return headerfooter("game/room.html", players=room["game"].get_users_attr("name"))
 
     @user.socket.on("create")
     def createroom():
@@ -89,12 +90,7 @@ def make_server():
         room.join_room(room_id)
 
         room["name"] = user["name"]
-        room["game"] = cardgame.Game([
-            (cardgame.Card, 10),
-            (cardgame.SpyCard, 3),
-            (cardgame.NukeCard, 2),
-            (cardgame.MultCard, 1),
-        ])
+        room["game"] = shutthebox.ShutTheBox()
         user["playerid"] = room["game"].new_player()
 
         quickflask.return_socket('redirect', "/play/room")
@@ -122,4 +118,4 @@ def make_server():
 if __name__ == '__main__':
     socket, server = make_server()
 
-    socket.run(server, "192.168.0.2", )
+    socket.run(server)

@@ -78,7 +78,7 @@ class RoomBase:
             default_roomkeys = {}
 
         self.rooms = {}
-        self.rooms_len = 0
+        self.rooms_len = 1  # Tried 0 but it doesnt work with socketio, maybe a reseved room?
         self.user = userbase
         self.user.userkeys["room"] = None
 
@@ -113,6 +113,8 @@ class RoomBase:
         socketio.leave_room(room_id)
         self.user["room"] = None
         self.rooms[room_id]["uids"].remove(session["uid"])
+        if "game" in self.roomkeys and self.rooms[room_id]["game"] is not None:
+            self.rooms[room_id]["game"].player_leave(session["uid"])
         if len(self.rooms[room_id]["uids"]) < 1:
             self.rooms.pop(room_id)
 
@@ -192,5 +194,5 @@ def return_socket(*args, **kwargs):
     assert "room" not in kwargs
     return_room = -session["uid"]  # Unique room just in case, untested if just -1 would work
     socketio.join_room(return_room)
-    socketio.emit(*args,**kwargs,room=return_room)
+    socketio.emit(*args, **kwargs, room=return_room)
     socketio.leave_room(return_room)

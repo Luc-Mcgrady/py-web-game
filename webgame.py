@@ -14,22 +14,39 @@ def init(user: quickflask.UserBase, room: quickflask.RoomBase, fail_on_reinit=Tr
 
     _room.roomkeys["game"] = None
 
-    @_user.socket.on("request_gamestate")
-    def gamestate_parse(json: dict):
+    @_user.socket.on("game_state")
+    def gamestate_parse(keys=None):
+
+        if keys is None:
+            keys = []
+
         gamestate = room["game"].get_state()
 
-        gamestate = WebGame.handle_keys(json, gamestate)
+        for key in keys:
+            gamestate = gamestate[key]
 
-        quickflask.return_socket('receive_gamestate', gamestate)
+        quickflask.return_socket('game_state_receive', gamestate, keys)
 
-    @_user.socket.on("request_playerinfo")
-    def playerstate_parse(json: dict):
-        state = room["game"].players[json["uid"]].get_player_state()
-        state = WebGame.handle_keys(json, state)
+    # @_user.socket.on("game_playerstate")
+    # def playerstate_parse(json: dict):
+    #    state = room["game"].players[json["uid"]].get_player_state()
+    #    state = WebGame.handle_keys(json, state)
 
-        quickflask.return_socket(state)
+    #    quickflask.return_socket(state)
+
+    @_user.socket.on("game_action")
+    def action_parse(ty, *args):
+        room["game"].action_handle(ty, *args)
 
     _initiated = True
+
+
+def get_room():
+    return _room
+
+
+def get_user():
+    return _user
 
 
 class WebGame:
@@ -44,6 +61,11 @@ class WebGame:
 
         return o__
 
+    @staticmethod
+    def emit_room_event(ty, *args):
+        """Sends a message back to the client javascript, caught with a socket.on(ty,(*args) => {function})"""
+        _room.socket_emit(ty, *args)
+
     def __init__(self):
         assert _initiated, "run webgame.init(user, room) first"
 
@@ -52,7 +74,10 @@ class WebGame:
     def get_players(self):
         return self.players
 
-    def get_players_attr(self, key):
+    def get_users(self):
+        return [_user.users[player] for player in self.players]
+
+    def get_users_attr(self, key):
         return [_user.users[player][key] for player in self.players]
 
     def get_state(self):
@@ -67,6 +92,13 @@ class WebGame:
     def get_player_type():
         """Should be overridden to return the webplayer class that you want"""
         return WebGamePlayer
+
+    def action_handle(self, ty, *args):
+        """Handles any actions passed to it via javascript: socket.emit("game_action",ty,*args)"""
+        pass
+
+    def player_leave(self, uid):
+        self.players.pop(uid)
 
 
 class WebGamePlayer:

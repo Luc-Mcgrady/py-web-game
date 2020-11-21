@@ -1,8 +1,11 @@
+# i have decided that this is going to be used after i get the general thing working (aka shutthebox.py)
+
 import random
 import quickflask
 import webgame
 from webgame import init
 from copy import deepcopy, copy
+
 
 class Card:
     def __init__(self, game):
@@ -124,11 +127,10 @@ class Game(webgame.WebGame):
         if cards_weights is None:
             cards_weights = []
 
-        self.boards = []
         self.deck = []
         self.deck_weights = []
         self.player_index = 0
-        self._started = False
+        self.started = False
 
         self.start_player_lives = 2
         self.start_card_count = 5
@@ -145,7 +147,7 @@ class Game(webgame.WebGame):
         return [a for a in self.players if a.lives > 0]
 
     def end_round(self):
-        assert self._started
+        assert self.started
 
         lowest_scorers = []
         lowest_score = None
@@ -171,14 +173,22 @@ class Game(webgame.WebGame):
         [self.deck_add(*args) for args in tuples]
 
     def start(self):
-        self._started = True
-        for player in self.players:
+        self.started = True
+        for player in self.players.values():
             [player.draw_card() for _ in range(self.start_card_count)]
+
+    def get_state(self):
+        return {"started": self.started, "player_names": self.get_users_attr("name")}
+
+    def action_handle(self, ty, *args):
+        if ty == "start":
+            self.start()
 
     def new_player(self):
         """Returns the index of a new player in the self.players array"""
-        assert not self._started
+        assert not self.started
         super().new_player()
+        print(self.players)
 
     def get_player_type(self):
         return Player
