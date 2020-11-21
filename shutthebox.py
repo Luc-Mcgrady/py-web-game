@@ -2,7 +2,6 @@ import webgame
 from webgame import init
 from flask import session
 import random
-import flask_socketio
 
 
 def get_possible_addends_sum(arr):  # I copied this from my tkinter version, dont ask me
@@ -35,19 +34,19 @@ class ShutTheBox(webgame.WebGame):
 
         self.target = None
         self.random_target()
+        self.set_max_players(2)
+
+        self.settings = {
+            "boxes": 9,
+        }
 
     def random_target(self):
-        self.target = random.randint(1, 9)
+        self.target = random.randint(1, 6) + random.randint(1, 6)
 
     def player_check(self):
         if self.player_turn > len(self.players):
             self.player_turn = 0
             self.emit_room_event("game_state_receive", self.get_state())
-
-    def new_player(self):
-        super().new_player()
-        if len(self.players) >= 2:  # TODO, implement a max players system
-            webgame.get_room()["open"] = False
 
     def player_leave(self, uid):
         super().player_leave(uid)
@@ -84,4 +83,4 @@ class ShutTheBox(webgame.WebGame):
                 self.emit_room_event("game_turn", self.get_users()[self.player_turn]["name"])
 
     def get_state(self):
-        return {"boxes": [a.locked for a in self.boxes], "target": self.target, "playerturn": self.player_turn}
+        return {"boxes": [a.value for a in self.boxes if not a.locked], "target": self.target, "playerturn": self.player_turn}

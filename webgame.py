@@ -51,7 +51,7 @@ def get_user():
 
 class WebGame:
     @staticmethod
-    def handle_keys(json: dict, o__: dict):  # I saw someone use o__ and thought it looked cool
+    def _handle_keys(json: dict, o__: dict):  # I saw someone use o__ and thought it looked cool
         if "keys" in json:
             assert type(json["keys"]) == list
             for key in json["keys"]:
@@ -70,6 +70,15 @@ class WebGame:
         assert _initiated, "run webgame.init(user, room) first"
 
         self.players = {}
+        self.max_players = None
+        self.closed = False
+
+    def close_room(self):
+        self.closed = True
+        _room["open"] = False
+
+    def set_max_players(self, val: int):
+        self.max_players = val
 
     def get_players(self):
         return self.players
@@ -86,6 +95,11 @@ class WebGame:
 
     def new_player(self):
         self.players[session["uid"]] = self.get_player_type()(self)
+
+        if self.max_players is not None and len(
+                self.players) >= self.max_players:  # TODO, implement a max players system
+            _room["open"] = False
+
         return session["uid"]
 
     @staticmethod
@@ -99,6 +113,8 @@ class WebGame:
 
     def player_leave(self, uid):
         self.players.pop(uid)
+        if self.max_players is not None and not self.closed:  # In case a custom open and close system is wanted
+            _room["open"] = True
 
 
 class WebGamePlayer:
