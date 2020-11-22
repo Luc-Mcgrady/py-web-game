@@ -12,13 +12,10 @@ def make_server():
 
     user = quickflask.UserBase(server, {
         "name": None,
-        "playerid": None
     })
 
     room = quickflask.RoomBase(user, {
         "name": None,
-        "game": None,
-        "open": True,
     })
 
     headerfooter = quickflask.TemplateCombiner(["header.html"], None, {

@@ -73,6 +73,12 @@ The fix would be to add "{key}" to the default template""".format(key=key)
 
 class RoomBase:
     def __init__(self, userbase: UserBase, default_roomkeys=None):
+        """The reserved keys should be used as follows
+
+        uids: Untouched,
+        open: Simply set this to false to prevent people joining that room, You can do this from the game object or (inadvisably) directly.
+        game: should be a webgame.WebGame object or child object, this object will contain this logic of the room.
+        """
 
         if default_roomkeys is None:
             default_roomkeys = {}
@@ -82,9 +88,12 @@ class RoomBase:
         self.user = userbase
         self.user.userkeys["room"] = None
 
-        assert "uids" not in default_roomkeys, "reserved key 'uids'"
+        for key in ["uids", "open", "game"]:
+            assert key not in default_roomkeys, "reserved key '%s'" % key
         self.roomkeys = default_roomkeys
         self.roomkeys["uids"] = []
+        self.roomkeys["open"] = True
+        self.roomkeys["game"] = None
 
         @self.user.socket.on('connect')
         def re_room():
@@ -95,6 +104,8 @@ class RoomBase:
         """Makes the user join a room, returns if the room is new or not"""
         if self.user["room"] is not None:
             self.leave_room()
+        if not self.rooms[room_id]["open"]:
+            return
 
         socketio.join_room(room_id)
         self.user["room"] = room_id
@@ -111,12 +122,14 @@ class RoomBase:
         assert self.user["room"] is not None
         room_id = self.user["room"]
         socketio.leave_room(room_id)
-        self.user["room"] = None
         self.rooms[room_id]["uids"].remove(session["uid"])
-        if "game" in self.roomkeys and self.rooms[room_id]["game"] is not None:
+
+        if self["game"] is not None:
             self.rooms[room_id]["game"].player_leave(session["uid"])
         if len(self.rooms[room_id]["uids"]) < 1:
             self.rooms.pop(room_id)
+
+        self.user["room"] = None
 
     def socket_emit(self, event, *args):
         socketio.emit(event, *args, room=self.user["room"])

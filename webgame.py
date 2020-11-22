@@ -13,6 +13,7 @@ def init(user: quickflask.UserBase, room: quickflask.RoomBase, fail_on_reinit=Tr
     _room = room
 
     _room.roomkeys["game"] = None
+    _user.userkeys["playerid"] = None
 
     @_user.socket.on("game_state")
     def gamestate_parse(keys=None):
@@ -92,6 +93,9 @@ class WebGame:
     def get_state(self):
         """Should be overloaded with a dict of all variables that need to be retrived by the client"""
         return self.__dict__
+
+    def send_state(self):
+        self.emit_room_event("game_state_receive", self.get_state())
 
     def new_player(self):
         self.players[session["uid"]] = self.get_player_type()(self)
