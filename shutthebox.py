@@ -105,5 +105,10 @@ class ShutTheBox(webgame.WebGame):
                 self.send_turn()
 
     def get_state(self):
-        return {"boxes": [a.value for a in self.boxes if not a.locked], "target": self.target,
-                "playerturn": self.player_turn}
+        try:
+            boxes = [a.value for a in self.boxes if not a.locked]
+        except TypeError:
+            boxes = None
+
+        return {"boxes": boxes, "target": self.target,
+                "playerturn": self.get_users()[self.player_turn]["name"]}

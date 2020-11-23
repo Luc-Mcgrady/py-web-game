@@ -26,7 +26,7 @@ def init(user: quickflask.UserBase, room: quickflask.RoomBase, fail_on_reinit=Tr
         for key in keys:
             gamestate = gamestate[key]
 
-        quickflask.return_socket('game_state_receive', gamestate, keys)
+        quickflask.return_socket('game_state_return', gamestate, tuple(keys))
 
     # @_user.socket.on("game_playerstate")
     # def playerstate_parse(json: dict):
