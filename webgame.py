@@ -94,8 +94,16 @@ class WebGame:
         """Should be overloaded with a dict of all variables that need to be retrived by the client"""
         return self.__dict__
 
-    def send_state(self):
-        self.emit_room_event("game_state_receive", self.get_state())
+    def send_state(self, keys: list = None):
+        if keys is None:
+            keys = []
+
+        state = self.get_state()
+
+        for key in keys:
+            state = state[key]
+
+        self.emit_room_event("game_state_return", state)
 
     def new_player(self):
         self.players[session["uid"]] = self.get_player_type()(self)

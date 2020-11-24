@@ -5,6 +5,9 @@ import random
 
 
 def get_possible_addends_sum(arr):  # I copied this from my tkinter version, dont ask me
+    """Gets a list of tuples of possible sums from a given list of addends in the format
+    (addends to make sum, sum)
+    """
     top_threshold = 2 ** len(arr)
     for i in range(0, top_threshold):
         current_sum = 0
@@ -16,7 +19,7 @@ def get_possible_addends_sum(arr):  # I copied this from my tkinter version, don
         yield addends, current_sum
 
 
-class Box:
+class Box:  # On second thought a list of bools with the index being the value is probably more approprite but this is more verbose
     def __init__(self, val):
         self.value = val
         self.locked = False
@@ -47,13 +50,15 @@ class ShutTheBox(webgame.WebGame):
     def player_check(self):
         if self.player_turn > len(self.players):
             self.player_turn = 0
-            self.send_turn()
+            self.send_state()
 
     def game_start(self):
         self.started = True
         self.random_target()
         self.boxes = [Box(a) for a in range(1, 10)]
         self.emit_room_event("game_turn", self.get_users()[self.player_turn]["name"])
+        self.send_state()
+        self.emit_room_event("cancel_reset")
 
     def player_leave(self, uid):
         super().player_leave(uid)
@@ -63,9 +68,6 @@ class ShutTheBox(webgame.WebGame):
         super().new_player()
         if len(self.players) >= self.min_players:
             self.game_start()
-
-    def send_turn(self):
-        self.emit_room_event("game_turn", self.get_users()[self.player_turn]["name"])
 
     def action_handle(self, ty, *args):
         if not self.started:
@@ -102,13 +104,15 @@ class ShutTheBox(webgame.WebGame):
                 # Return the player who its not the current turn of
                 self.started = False
             else:
-                self.send_turn()
+                self.send_state()
 
     def get_state(self):
         try:
-            boxes = [a.value for a in self.boxes if not a.locked]
+            boxes = [a.locked for a in self.boxes]
         except TypeError:
             boxes = None
 
-        return {"boxes": boxes, "target": self.target,
-                "playerturn": self.get_users()[self.player_turn]["name"]}
+        return {"boxes": boxes,
+                "target": self.target,
+                "playerturn": self.get_users()[self.player_turn]["name"],
+                }

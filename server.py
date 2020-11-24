@@ -79,7 +79,7 @@ def make_server():
         redirect = redirect_login()
         if redirect is not None:
             return redirect
-        return headerfooter("game/room.html", players=room["game"].get_users_attr("name"))
+        return headerfooter("game/shutthebox.html", players=room["game"].get_users_attr("name"))
 
     @user.socket.on("create")
     def createroom():

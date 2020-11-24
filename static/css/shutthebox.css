@@ -1,0 +1,7 @@
+*.box_locked {
+    background-color: black;
+    color: white;
+}
+*.box_selected {
+    background-color: darkorange;
+}
