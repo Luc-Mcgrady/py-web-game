@@ -1,14 +1,12 @@
 import flask
 from flask import request, session
-import flask_socketio as socketio
 import quickflask
-import os
 import shutthebox
 
 
 def make_server():
     server = flask.Flask(__name__)
-    server.secret_key = os.urandom(16)
+    server.secret_key = "Well damn you got me, have fun hacking!!"
 
     user = quickflask.UserBase(server, {
         "name": None,
