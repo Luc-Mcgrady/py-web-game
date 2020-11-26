@@ -112,7 +112,6 @@ def make_server():
     return user.socket, server
 
 
+socket, app = make_server()
 if __name__ == '__main__':
-    socket, server = make_server()
-
-    socket.run(server)
+    socket.run(app)
