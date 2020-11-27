@@ -7,8 +7,13 @@ from flask import request, session
 import quickflask
 import shutthebox
 
+GAMELIST = [shutthebox.ShutTheBox]
 
-def make_server():  # In a function to avoid globals
+
+def make_server(GAMELIST=None):  # In a function to avoid globals
+    if GAMELIST is None:
+        GAMELIST = []
+
     server = flask.Flask(__name__)
     server.secret_key = "Well damn you got me, have fun hacking!!"
 
@@ -74,26 +79,28 @@ def make_server():  # In a function to avoid globals
     def creategame():
         if request.method == "POST":
             return flask.redirect("/play/room")
-        return headerfooter("game/matchcreator.html", all_redirects)
+        return headerfooter("game/gamelist.html", all_redirects, gamelist=GAMELIST)
 
     @server.route("/play/room")
     def gameroom():
         redirect = redirect_login()
         if redirect is not None:
             return redirect
-        return headerfooter("game/shutthebox.html", players=room["game"].get_users_attr("name"))
+        return headerfooter("game/rooms/%s" % room["game"].template_url, players=room["game"].get_users_attr("name"))
 
     @user.socket.on("create")
-    def createroom():
+    def createroom(gametype: str):
         if not user.b_logged_in():
             quickflask.return_socket("redirect", "/login")
             return
+
+        gametype = [a for a in GAMELIST if a.__name__ == gametype][0]
 
         room_id = room.new_room()
         room.join_room(room_id)
 
         room["name"] = user["name"]
-        room["game"] = shutthebox.ShutTheBox()  # <<<<< THIS HERE
+        room["game"] = gametype()
         user["playerid"] = room["game"].new_player()
 
         quickflask.return_socket('redirect', "/play/room")
@@ -114,7 +121,7 @@ def make_server():  # In a function to avoid globals
     return user.socket, server
 
 
-socket, app = make_server()
+socket, app = make_server(GAMELIST)
 if __name__ == '__main__':
     print("Server running on http://localhost:5000")
     socket.run(app)

@@ -76,8 +76,19 @@ class WebGame:
         """Sends a message back to the client javascript, caught with a socket.on(ty,(*args) => {function})"""
         _room.socket_emit(ty, *args)
 
+    @staticmethod
+    def title():
+        """Should be overloaded to return the title of the game"""
+        return "WebGameGeneric"
+
     def __init__(self):
+        """This should be overloaded with at least:
+             setting template_url to the appropriate filename. (should be in templates/game/rooms)
+        You can then put whatever else you want here
+         """
         assert _initiated, "run webgame.init(user, room) first"
+
+        self.template_url = ""  # Should be set to the html of the room that recives the socket.
 
         self.players = {}
         self.max_players = None

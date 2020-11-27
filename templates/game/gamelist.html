@@ -1,0 +1,5 @@
+<body>
+    {% for game in gamelist %}
+    <input type="button" value=" {{ game.title() }} " onclick="socket.emit('create', '{{game.__name__}}')">
+    {% endfor %}
+</body>

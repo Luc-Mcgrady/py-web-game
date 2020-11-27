@@ -34,8 +34,14 @@ class Box:  # On second thought a list of bools with the index being the value i
 
 
 class ShutTheBox(webgame.WebGame):
+    @staticmethod
+    def title():
+        return "Shut The Box"
+
     def __init__(self):
         super().__init__()
+        self.template_url = "shutthebox.html"
+
         self.boxes = None  # variables used for game itself
         self.player_turn = session["uid"]  # Also feel like a player turn system is needed although not every game uses one.
         self.target = None
