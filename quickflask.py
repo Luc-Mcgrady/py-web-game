@@ -130,7 +130,6 @@ class RoomBase:
 
         self.rooms[room_id]["uids"].append(session["uid"])
 
-    # TODO there is a bug that I havent been able to replicate where if you delete your cookies while in the lobby you can create many empty rooms with "None" as the host name.
     def new_room(self):
         """Creates a new room and returns the rooms uid"""
         room_id = self.rooms_len

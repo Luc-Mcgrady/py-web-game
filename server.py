@@ -83,8 +83,12 @@ def make_server():  # In a function to avoid globals
             return redirect
         return headerfooter("game/shutthebox.html", players=room["game"].get_users_attr("name"))
 
-    @user.socket.on("create")  # Todo This SHOULD NOT BE A SOCKET, convert a server.route(method=post)
+    @user.socket.on("create")
     def createroom():
+        if not user.b_logged_in():
+            quickflask.return_socket("redirect", "/login")
+            return
+
         room_id = room.new_room()
         room.join_room(room_id)
 
@@ -94,7 +98,7 @@ def make_server():  # In a function to avoid globals
 
         quickflask.return_socket('redirect', "/play/room")
 
-    @user.socket.on("join")  # todo this should also not be a socket.
+    @user.socket.on("join")
     def joining(room_id):
         if room.rooms[room_id]["open"]:
             room.join_room(room_id)
@@ -102,14 +106,10 @@ def make_server():  # In a function to avoid globals
 
             quickflask.return_socket('redirect', "/play/room")
 
-    @user.socket.on("leave")  # Maybe you can justify this being a socket instead of a post though i somewhat doubt it
+    @user.socket.on("leave")
     def leaving():
         room.leave_room()
         quickflask.return_socket('redirect', "/play/rooms")
-
-    @user.socket.on("game_start")
-    def return_button_press():  # todo I have no idea what this does
-        socket.emit("setnum", room["number"], room=user["room"])
 
     return user.socket, server
 
