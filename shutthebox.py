@@ -110,7 +110,7 @@ class ShutTheBox(webgame.WebGame):
 
             [self.boxes[a - 1].lock() for a in choices]  # Lock the boxes that the player chose
             self.random_target()  # Set a new target
-            self.player_turn = (self.player_turn + 1) & len(self.players) - 1 # Move on to the next player
+            self.player_turn = (self.player_turn + 1) % len(self.players) - 1 # Move on to the next player
             # ^ I havent a clue why its this complicated to move to the next value in the players dict
             # todo Make this a library function
 
