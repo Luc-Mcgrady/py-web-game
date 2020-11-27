@@ -29,7 +29,7 @@ def make_server():  # In a function to avoid globals
     shutthebox.init(user, room)
 
     def redirect_login():
-        if "uid" not in session:
+        if not user.b_logged_in():
             return flask.redirect("/login")
 
     def redirect_room():
@@ -59,7 +59,7 @@ def make_server():  # In a function to avoid globals
         if request.method == "POST":
             user.new_logon()
             user["name"] = request.form["name"]
-        if "uid" in session:
+        if user.b_logged_in():
             return flask.redirect("index")
         return headerfooter("login.html", [redirect_room])
 
