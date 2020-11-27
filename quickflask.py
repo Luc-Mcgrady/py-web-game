@@ -143,7 +143,10 @@ class RoomBase:
         assert self.user["room"] is not None
         room_id = self.user["room"]
         socketio.leave_room(room_id)
-        self.rooms[room_id]["uids"].remove(session["uid"])
+        try:
+            self.rooms[room_id]["uids"].remove(session["uid"])
+        except ValueError:
+            pass
 
         if self["game"] is not None:
             self.rooms[room_id]["game"].player_leave(session[

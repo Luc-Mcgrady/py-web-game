@@ -37,7 +37,7 @@ class ShutTheBox(webgame.WebGame):
     def __init__(self):
         super().__init__()
         self.boxes = None  # variables used for game itself
-        self.player_turn = 0  # Also feel like a player turn system is needed although not every game uses one.
+        self.player_turn = session["uid"]  # Also feel like a player turn system is needed although not every game uses one.
         self.target = None
 
         self.set_max_players(
@@ -55,17 +55,23 @@ class ShutTheBox(webgame.WebGame):
         self.target = random.randint(1, 6) + random.randint(1, 6)
 
     def player_check(self):
-        """Checks that the player that the """
-        if self.player_turn > len(self.players):
-            self.player_turn = 0
+        """Checks that the player whos turn it is is still in the game"""
+        if self.player_turn not in self.players and len(self.players) > 0:
+            self.player_turn = list(self.players)[0]
             self.send_state()
+
+    def next_turn(self):
+        playerlist = list(self.players)
+        self.player_turn = playerlist[
+            (playerlist.index(self.player_turn) + 1) % len(playerlist)]  # Move on to the next player
+        # ^ I havent a clue why its this complicated to move to the next value in the players dict
+        # todo Make this a library function
 
     def game_start(self):
         """Starts (or restarts) the game"""
         self.started = True
         self.random_target()
         self.boxes = [Box(a) for a in range(1, 10)]
-        self.emit_room_event("game_turn", self.get_users()[self.player_turn]["name"])
         self.send_state()
         self.emit_room_event("cancel_reset")
 
@@ -97,7 +103,7 @@ class ShutTheBox(webgame.WebGame):
             assert type(choices) == list  # ensure that the argument is a list
             total = 0
 
-            if list(self.players.keys())[self.player_turn] != session["uid"]:  # verify its the players turn
+            if self.player_turn != session["uid"]:  # verify its the players turn
                 return
 
             for boxid in choices:  # Verify the choices are valid (sum up to the target and arent locked)
@@ -110,9 +116,7 @@ class ShutTheBox(webgame.WebGame):
 
             [self.boxes[a - 1].lock() for a in choices]  # Lock the boxes that the player chose
             self.random_target()  # Set a new target
-            self.player_turn = (self.player_turn + 1) % len(self.players)  # Move on to the next player
-            # ^ I havent a clue why its this complicated to move to the next value in the players dict
-            # todo Make this a library function
+            self.next_turn()
 
             if 0 == len([a for a in get_possible_addends_sum([a.value for a in self.boxes if not a.locked]) if
                          a[1] == self.target]):  # If there are no possible answers
@@ -134,6 +138,6 @@ class ShutTheBox(webgame.WebGame):
 
         return {"boxes": boxes,
                 "target": self.target,
-                "turn_name": self.get_users()[self.player_turn]["name"],
+                "turn_name": webgame.get_user().users[self.player_turn]["name"],
                 "turn_uid": self.player_turn,
                 }

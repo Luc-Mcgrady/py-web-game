@@ -12,7 +12,8 @@ function handle_keys(json,keys,key_handlers) {
 
 	if (typeof key_handlers == "object")
         for (const key in json) {
-            key_handlers[key](json[key])
+            if (key in key_handlers)
+                key_handlers[key](json[key])
         }
     else
         key_handlers(json)

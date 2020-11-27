@@ -53,10 +53,10 @@ function handle_boxes(boxes) { // For use in the handle json function
 
 function turn_uid(id) {
     if (uid === id) { // I have no idea why its this way around
-        document.getElementById("submit").disabled = true
-    } else {
         document.getElementById("playerturn").innerHTML += " (Your turn)"
         document.getElementById("submit").disabled = false
+    } else {
+        document.getElementById("submit").disabled = true
     }
 }
 
