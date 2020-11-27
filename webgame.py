@@ -25,12 +25,17 @@ def init(user: quickflask.UserBase, room: quickflask.RoomBase,
         if keys is None:
             keys = []
 
-        gamestate = room["game"].get_state()
+        game = room["game"]
+        gamestate = game.get_state()
+        assert "player_uid" not in gamestate, "Reserved key: player_uid"
+        gamestate["player_uid"] = session["uid"]
+        # For technichal reasons you can only retrive the player uid on a return message instead of one sent
+        # by the backend
 
         for key in keys:
             gamestate = gamestate[key]
 
-        quickflask.return_socket('game_state_return', gamestate, tuple(keys))
+        quickflask.return_socket('game_state_return', gamestate, keys)
 
     # @_user.socket.on("game_playerstate")
     # def playerstate_parse(json: dict):
@@ -146,12 +151,13 @@ class WebGame:
 class WebGamePlayer:
     """todo Not yet fully implimented
     can be used to easily impliment player specific functions and store player variables. e.g. adding a player score"""
+
     def __init__(self, game):
         self.game = game
 
     def get_game(self):
         return self.game
 
-    def get_player_state(self):
+    def get_state(self):
         """should be overloaded to return a dict with all the data relavent to this player in game"""
         return self.__dict__

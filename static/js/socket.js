@@ -7,13 +7,15 @@ function handle_keys(json,keys,key_handlers) {
 		keys = []
 	
 	keys.forEach((key) => {
-		json = json[key]
 		key_handlers = key_handlers[key]
 	})
-	
-	for (const key in key_handlers) {
-		key_handlers[key](json[key])
-	}
+
+	if (typeof key_handlers == "object")
+        for (const key in json) {
+            key_handlers[key](json[key])
+        }
+    else
+        key_handlers(json)
 }
 function get_state(keys) { // Used to ask the server for an update on what the current game_state is
     socket.emit("game_state",keys)

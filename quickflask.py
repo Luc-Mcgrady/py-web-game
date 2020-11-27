@@ -229,7 +229,7 @@ class TemplateCombiner:
         return out
 
 
-def return_socket(*args, **kwargs):
+def return_socket(ty, *args, **kwargs):
     """Returns a socketio message to soely the user that sent it.
     For this function to work properly there must not be any negative socketio rooms"""
     assert "room" not in kwargs
@@ -237,5 +237,5 @@ def return_socket(*args, **kwargs):
 
     socketio.join_room(
         return_room)  # todo I feel like there is some library inbuilt way of doing this but the one i tried didnt work so i gave up.
-    socketio.emit(*args, **kwargs, room=return_room)
+    socketio.emit(ty, args, **kwargs, room=return_room)
     socketio.leave_room(return_room)

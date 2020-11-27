@@ -1,5 +1,10 @@
 // This is the clientside part of the shut the box game and is mostly used to update the gui.
 var gui_boxes = [] // A list of GameBox classes which can be used to quickly refrence their gui button counterparts.
+var uid = null
+
+function _set_ids_html(id,html) { // Used as a short hand for changing the inner html of an element
+    document.getElementById(id).innerHTML = html
+}
 
 class GameBox {
 	constructor(value) {
@@ -46,18 +51,30 @@ function handle_boxes(boxes) { // For use in the handle json function
 	}
 }
 
+function turn_uid(id) {
+    if (uid === id) { // I have no idea why its this way around
+        document.getElementById("submit").disabled = true
+    } else {
+        document.getElementById("playerturn").innerHTML += " (Your turn)"
+        document.getElementById("submit").disabled = false
+    }
+}
+
+function set_uid(id) {
+    unset = uid === null
+    uid = id
+    if (unset)
+        get_state() // Used to update the state of the game the very moment you join the room.
+}
 
 key_handle_json = { //For every property of the get_state value passed in from backend, does the specified function
     "boxes":handle_boxes,
-    "playerturn":(player)=>{_set_ids_html("playerturn","Current turn: " + player)},
+    "turn_name":(player)=>{_set_ids_html("playerturn","Current turn: " + player)},
+    "turn_uid":turn_uid, // for some reason this doesnt work the moment the room is loaded.
+    "player_uid":set_uid, // This is a reserverd key that is automaticaly set by the program
     "target":function(target) {_set_ids_html("target","Current target: " + String(target))},
 }
 // Personaly i perefer to use "(args)=>{func}" instead of "function(args) {func}" but they are both functionaly identical
-
-function _set_ids_html(id,html) { // Used as a short hand for changing the inner html of an element
-    document.getElementById(id).innerHTML = html
-}
-
 
 function send_choices(choices) { // I perfer to create wrapper functions for my socketio events but to each his own.
     socket.emit("game_action","boxes",choices)
@@ -103,4 +120,5 @@ socket.on('game_over',(name) => { // Both of these socket.ons could be made a si
     document.getElementById("submit").hidden = true
 })
 
-get_state() // Used to update the state of the game the very moment you join the room.
+get_state(["player_uid"]) // Make sure the uid is set before the rest run
+// This way of doing it is admitadly unintuitve but if you think of a better way id be happy to know
