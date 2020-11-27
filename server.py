@@ -1,10 +1,14 @@
+# This is the main file to run the website, Though you can use the other files to make your own website, they are
+# Geared towards making this website work so i wouldent reccomend it, though i would be slightly flattered.
+
+# Todo make imports markdown safe, (html is incredibly easy to inject into the username and likely other places)
 import flask
 from flask import request, session
 import quickflask
 import shutthebox
 
 
-def make_server():
+def make_server():  # In a function to avoid globals
     server = flask.Flask(__name__)
     server.secret_key = "Well damn you got me, have fun hacking!!"
 
@@ -79,18 +83,18 @@ def make_server():
             return redirect
         return headerfooter("game/shutthebox.html", players=room["game"].get_users_attr("name"))
 
-    @user.socket.on("create")
+    @user.socket.on("create")  # Todo This SHOULD NOT BE A SOCKET, convert a server.route(method=post)
     def createroom():
         room_id = room.new_room()
         room.join_room(room_id)
 
         room["name"] = user["name"]
-        room["game"] = shutthebox.ShutTheBox()
+        room["game"] = shutthebox.ShutTheBox()  # <<<<< THIS HERE
         user["playerid"] = room["game"].new_player()
 
         quickflask.return_socket('redirect', "/play/room")
 
-    @user.socket.on("join")
+    @user.socket.on("join")  # todo this should also not be a socket.
     def joining(room_id):
         if room.rooms[room_id]["open"]:
             room.join_room(room_id)
@@ -98,13 +102,13 @@ def make_server():
 
             quickflask.return_socket('redirect', "/play/room")
 
-    @user.socket.on("leave")
+    @user.socket.on("leave")  # Maybe you can justify this being a socket instead of a post though i somewhat doubt it
     def leaving():
         room.leave_room()
         quickflask.return_socket('redirect', "/play/rooms")
 
     @user.socket.on("game_start")
-    def return_button_press():
+    def return_button_press():  # todo I have no idea what this does
         socket.emit("setnum", room["number"], room=user["room"])
 
     return user.socket, server
@@ -112,4 +116,5 @@ def make_server():
 
 socket, app = make_server()
 if __name__ == '__main__':
+    print("Server running on http://localhost:5000")
     socket.run(app)

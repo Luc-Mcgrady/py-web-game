@@ -4,9 +4,7 @@ from copy import deepcopy
 import flask_socketio as socketio
 
 
-# import logging
-# logging.getLogger('werkzeug').setLevel(logging.ERROR)
-
+# Todo add a sweep function which automaticaly logs out users and kicks them out of rooms if they have been afk (not sent or recived events) long enough.
 
 class UserBase:
     def __init__(self, flaskserver: flask.Flask, userdefaults=None):
@@ -22,12 +20,14 @@ class UserBase:
         self.socket = socketio.SocketIO(self.server)
 
     def current_user(self):
+        """Get the current user that sent the HTTP request and all their attributes"""
         try:
             return self.users[session["uid"]]
         except KeyError:
             return None
 
     def new_logon(self):
+        """Creates a new user and returns the users key"""
         newuid = len(self.users)
         self.users[newuid] = self.userkeys.copy()
         session["uid"] = newuid
@@ -35,13 +35,20 @@ class UserBase:
 
     @staticmethod
     def logout():
+        """This logs the player out so that they are no longer on the browser.
+        This does NOT remove the player from the player list meaning that theoreticaly they could log back in
+        todo Add re-login (would required password and be risky since the site isnt the best secure site ever)"""
         session.pop("uid", None)
 
     def b_logged_in(self):
-        """better than if .current_user() is none because it is for cookies rather than serverside storage"""
+        """ Returns true if there is a player logged in the current browser, otherwise returns false
+        better than if self.current_user() is none because it is uses cookies rather than serverside storage"""
         return "uid" in session and session["uid"] in self.users
 
     def currentuser_set_attribute(self, key, val, localstorage: bool = False):
+        """Basicaly obsolete due to self[key] = val
+        but contains a "localstorage" argument for weather you want to store a value as a cookie as well as serverside
+        for whatever reason"""
 
         assert key in self.current_user(), """
 The key "{key}" was not already in the template of a user .
@@ -56,24 +63,34 @@ The fix would be to add "{key}" to the default template""".format(key=key)
     #    self.users[key]["messages"].append(message)
 
     def global_message(self, message: dict):
+        """Sends a socketIO message to every player in the game, does not work on pages without socketio"""
         self.socket.send(message, broadcast=True)
 
     def currentuser_get_attribute(self, item):
+        """The same as self[item] todo Delete"""
         try:
             return self.current_user()[item]
         except (TypeError, KeyError):
             return
 
     def __getitem__(self, item):
+        """Returns an attribute of the current player."""
         return self.currentuser_get_attribute(item)
 
     def __setitem__(self, key, value):
+        """Sets an attribute of the current player"""
         self.currentuser_set_attribute(key, value)
 
 
 class RoomBase:
     def __init__(self, userbase: UserBase, default_roomkeys=None):
-        """The reserved keys should be used as follows
+        """
+        Arguments:
+            userbase: self explanatory
+            default_roomkeys: all the keys that are relavent to the room, No new keys should be created after start to
+            keep all the user attributes concurrent. For differing attributes use the game class.
+
+        The reserved keys should be used as follows
 
         uids: Untouched,
         open: Simply set this to false to prevent people joining that room, You can do this from the game object or (inadvisably) directly.
@@ -84,7 +101,7 @@ class RoomBase:
             default_roomkeys = {}
 
         self.rooms = {}
-        self.rooms_len = 1  # Tried 0 but it doesnt work with socketio, maybe a reseved room?
+        self.rooms_len = 1  # Tried 0 but it doesnt work with socketio, maybe a reseved room by the socketio library?
         self.user = userbase
         self.user.userkeys["room"] = None
 
@@ -96,12 +113,13 @@ class RoomBase:
         self.roomkeys["game"] = None
 
         @self.user.socket.on('connect')
-        def re_room():
+        def re_room():  # This is needed because the clientside socketio forgets which room its in every time the page changes.
             if self.user["room"] is not None:
                 socketio.join_room(self.user["room"])
 
     def join_room(self, room_id):
-        """Makes the user join a room, returns if the room is new or not"""
+        """Makes the user join a room.
+        if the user is already in a room, leave that room and then join the room"""
         if self.user["room"] is not None:
             self.leave_room()
         if not self.rooms[room_id]["open"]:
@@ -112,35 +130,43 @@ class RoomBase:
 
         self.rooms[room_id]["uids"].append(session["uid"])
 
+    # TODO there is a bug that I havent been able to replicate where if you delete your cookies while in the lobby you can create many empty rooms with "None" as the host name.
     def new_room(self):
+        """Creates a new room and returns the rooms uid"""
         room_id = self.rooms_len
         self.rooms_len += 1
         self.rooms[room_id] = deepcopy(self.roomkeys)
         return room_id
 
     def leave_room(self):
+        """Removes the user from the room that they are currently in"""
         assert self.user["room"] is not None
         room_id = self.user["room"]
         socketio.leave_room(room_id)
         self.rooms[room_id]["uids"].remove(session["uid"])
 
         if self["game"] is not None:
-            self.rooms[room_id]["game"].player_leave(session["uid"])
+            self.rooms[room_id]["game"].player_leave(session[
+                                                         "uid"])  # todo I havent touched this code in a while but feel like this should remove game the users your attribute
+            # Also when pycharm autoformats it does that wierd line breaky thing automaticaly, not my fault
         if len(self.rooms[room_id]["uids"]) < 1:
             self.rooms.pop(room_id)
 
         self.user["room"] = None
 
     def socket_emit(self, event, *args):
+        """Sends a socketio message to all the users in the room."""
         socketio.emit(event, *args, room=self.user["room"])
 
     def __getitem__(self, item):
+        """Gets the current room's attributes"""
         try:
             return self.rooms[self.user["room"]][item]
         except KeyError:
             return None
 
     def __setitem__(self, key, value):
+        """Sets an attribute of the current room"""
         assert key in self.roomkeys
         self.rooms[self.user["room"]][key] = value
 
@@ -204,8 +230,12 @@ class TemplateCombiner:
 
 
 def return_socket(*args, **kwargs):
+    """Returns a socketio message to soely the user that sent it.
+    For this function to work properly there must not be any negative socketio rooms"""
     assert "room" not in kwargs
     return_room = -session["uid"]  # Unique room just in case, untested if just -1 would work
-    socketio.join_room(return_room)
+
+    socketio.join_room(
+        return_room)  # todo I feel like there is some library inbuilt way of doing this but the one i tried didnt work so i gave up.
     socketio.emit(*args, **kwargs, room=return_room)
     socketio.leave_room(return_room)
