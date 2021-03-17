@@ -1,15 +1,21 @@
 
 <body>
-    <div class="match_grid">
-        <p>Players</p>
-        <p>Host Name</p>
-        <p>Join</p>
+    <table>
+        <tr>
+            <th>Players</th>
+            <th>Host Name</th>
+            <th>Game Type</th>
+            <th>Join</th>
+        </tr>
         {% for game in lobbys %}
-        <p>{{ game[1].uids|length }}</p>
-        <p>{{ game[1].name }}</p>
-        <a onclick="socket.emit('join',{{ game[0] }})" href="javascript:void(0);">Join</a>
+        <tr>
+            <td>{{ game[1].uids|length }}</td>
+            <td>{{ game[1].name }}</td>
+            <td>{{ game[1].game.title() }}</td>
+            <td><a onclick="socket.emit('join',{{ game[0] }})" href="javascript:void(0);">Join</a></td>
+        </tr>
         {% endfor %}
-    </div>
+    </table>
     <input type="button" onclick="document.location.href='/play/create_room'" value="create room" class="loose_button">
 
 </body>

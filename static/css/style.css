@@ -7,23 +7,32 @@ div.header {
 }
 div.content * {
     display: block;
-     margin-left: auto;
-      margin-right: auto;
-       margin-top:1%
+    margin-left: auto;
+    margin-right: auto;
+    margin-top:1%
 }
 
 div.match_grid {
     display: grid;
-    grid-template-columns: 20% auto 20%;
+    grid-template-columns: 20% auto 20% 20%;
 }
 div.match_grid > * {
     font-size:3vh;
     margin: 0px;
     display: inline-block;
 }
-div.match_grid, div.match_grid > * {
+
+table {
+    margin-left: auto;
+    margin-right: auto;
+    border-collapse: collapse;
+}
+
+th, td {
+    margin: 0px;
+    padding-left: 1em;
+    padding-right: 1em;
     border: 1px solid black;
-    border-collapse: collapse
 }
 
 input.logout {
