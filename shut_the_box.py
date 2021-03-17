@@ -1,15 +1,16 @@
 # This is an "example game" to see how the library works although it is fully functional. To change the game that
 # is created when you join a room look for the clearly marked comment in "server.py" and change that line.
-# Please not there are more functions you can see the descriptions of in "webgame.py".
+# Please not there are more functions you can see the descriptions of in "web_game.py".
 
-import webgame
-from webgame import init  # This should not be removed because it is called in the server function.
+import web_game
+from web_game import init  # This should not be removed because it is called in the server function.
 from flask import session
 import random
 
 
 def get_possible_addends_sum(
-        arr):  # I copied this from my tkinter version, dont ask me how it works, used to check if its possible to move.
+        arr):
+    # I copied this from my tkinter version, don't ask me how it works, used to check if its possible to move.
     """Gets a list of tuples of possible sums from a given list of addends in the format
     (addends to make sum, sum)
     """
@@ -24,7 +25,9 @@ def get_possible_addends_sum(
         yield addends, current_sum
 
 
-class Box:  # On second thought a list of bools with the index being the value is probably more approprite but this is more verbose
+class Box:
+    # On second thought a list of bools with the index being the value is probably more appropriate but this
+    #  is more verbose
     def __init__(self, val):
         self.value = val
         self.locked = False
@@ -33,24 +36,28 @@ class Box:  # On second thought a list of bools with the index being the value i
         self.locked = True
 
 
-class ShutTheBox(webgame.WebGame):
+class ShutTheBox(web_game.WebGame):
     @staticmethod
     def title():
         return "Shut The Box"
 
     def __init__(self):
         super().__init__()
-        self.template_url = "shutthebox.html"
+        self.template_url = "shut_the_box.html"
 
-        self.boxes = None  # variables used for game itself
-        self.player_turn = session["uid"]  # Also feel like a player turn system is needed although not every game uses one.
+        self.boxes = None
+        # variables used for game itself
+        self.player_turn = session["uid"]
+        # Also feel like a player turn system is needed although not every game uses one.
         self.target = None
 
         self.set_max_players(
-            2)  # Used for lobby to make the game dissapear and unjoinable when full, todo make room grey out instead
+            2)  # Used for lobby to make the game disappear and un-joinable when full, todo make room grey out instead
 
-        self.min_players = 2  # Used for starting the game
-        self.started = False  # I think that most games need a started element so im concidering moving it into the main library
+        self.min_players = 2
+        # Used for starting the game
+        self.started = False
+        # I think that most games need a started element so im considering moving it into the main library
 
         self.settings = {  # These settings will be able to be changed by the player in a future version (todo)
             "boxes": 9,
@@ -61,16 +68,16 @@ class ShutTheBox(webgame.WebGame):
         self.target = random.randint(1, 6) + random.randint(1, 6)
 
     def player_check(self):
-        """Checks that the player whos turn it is is still in the game"""
+        """Checks that the player who's turn it is is still in the game"""
         if self.player_turn not in self.players and len(self.players) > 0:
             self.player_turn = list(self.players)[0]
             self.send_state()
 
     def next_turn(self):
-        playerlist = list(self.players)
-        self.player_turn = playerlist[
-            (playerlist.index(self.player_turn) + 1) % len(playerlist)]  # Move on to the next player
-        # ^ I havent a clue why its this complicated to move to the next value in the players dict
+        player_list = list(self.players)
+        self.player_turn = player_list[
+            (player_list.index(self.player_turn) + 1) % len(player_list)]  # Move on to the next player
+        # ^ I haven't a clue why its this complicated to move to the next value in the players dict
         # todo Make this a library function
 
     def game_start(self):
@@ -96,7 +103,7 @@ class ShutTheBox(webgame.WebGame):
         """This is an inherited function which is called when a "game_action" is sent, it contains 2 args which
         are sent from the javascript.
 
-        This function in perticular handles 2 things, reseting the game and the choices that are sent by players.
+        This function in particular handles 2 things, resetting the game and the choices that are sent by players.
         """
         if not self.started:
             if ty == "restart":
@@ -104,17 +111,19 @@ class ShutTheBox(webgame.WebGame):
             return
         elif ty == "boxes":
             # Ideally all this could be a function for neatness but for demonstration ill leave it inline
-            assert len(args) == 1  # Make sure exactly one argument is recived
-            choices = args[0]  # set a variable to reperesent the argument for neatness
+            assert len(args) == 1  # Make sure exactly one argument is received
+            choices = args[0]  # set a variable to represent the argument for neatness
             assert type(choices) == list  # ensure that the argument is a list
             total = 0
 
             if self.player_turn != session["uid"]:  # verify its the players turn
                 return
 
-            for boxid in choices:  # Verify the choices are valid (sum up to the target and arent locked)
-                box = self.boxes[boxid - 1]
-                if box.locked:  # It is important that we do all the game logic checking on the server side so the player cant cheat by using js functions.
+            for box_id in choices:  # Verify the choices are valid (sum up to the target and arent locked)
+                box = self.boxes[box_id - 1]
+                if box.locked:
+                    # It is important that we do all the game logic checking on the server side so the player cant
+                    # cheat by using js functions.
                     return
                 total += box.value
             if total != self.target:
@@ -135,8 +144,9 @@ class ShutTheBox(webgame.WebGame):
                 self.send_state()
 
     def get_state(self):
-        """This is an inherited function that reperesents all the variables that are in play at a given time that arent player specific
-        This dict can be requested at any time by any of the players client side javascript using socket.emit("getstate")"""
+        """This is an inherited function that represents all the variables that are in play at a given time that
+        arent player specific This dict can be requested at any time by any of the players client side javascript
+        using socket.emit("getstate") """
         try:
             boxes = [a.locked for a in self.boxes]
         except TypeError:
@@ -144,6 +154,6 @@ class ShutTheBox(webgame.WebGame):
 
         return {"boxes": boxes,
                 "target": self.target,
-                "turn_name": webgame.get_user().users[self.player_turn]["name"],
+                "turn_name": web_game.get_user().users[self.player_turn]["name"],
                 "turn_uid": self.player_turn,
                 }

@@ -1,4 +1,4 @@
-import quickflask
+import quick_flask
 from flask import session
 
 _user = None
@@ -6,43 +6,43 @@ _room = None
 _initiated = False
 
 
-def init(user: quickflask.UserBase, room: quickflask.RoomBase,
+def init(user: quick_flask.UserBase, room: quick_flask.RoomBase,
          fail_on_reinit=True):  # I like this as much as you do but I cant figure out a way around it
     """ Initiates this library using a given user and room
-    fail_on_reinit determinse if the program should raise an error if it has been initiated previously"""
+    fail_on_reinit determines if the program should raise an error if it has been initiated previously"""
 
     global _user, _room, _initiated
     assert fail_on_reinit or not _initiated
     _user = user
     _room = room
 
-    _room.roomkeys["game"] = None
-    _user.userkeys["playerid"] = None
+    _room.room_keys["game"] = None
+    _user.user_keys["player_id"] = None
 
     @_user.socket.on("game_state")
-    def gamestate_parse(keys=None):
+    def game_state_parse(keys=None):
 
         if keys is None:
             keys = []
 
         game = room["game"]
-        gamestate = game.get_state()
-        assert "player_uid" not in gamestate, "Reserved key: player_uid"
-        gamestate["player_uid"] = session["uid"]
-        # For technichal reasons you can only retrive the player uid on a return message instead of one sent
+        game_state = game.get_state()
+        assert "player_uid" not in game_state, "Reserved key: player_uid"
+        game_state["player_uid"] = session["uid"]
+        # For technical reasons you can only retrieve the player uid on a return message instead of one sent
         # by the backend
 
         for key in keys:
-            gamestate = gamestate[key]
+            game_state = game_state[key]
 
-        quickflask.return_socket('game_state_return', gamestate, keys)
+        quick_flask.return_socket('game_state_return', game_state, keys)
 
-    # @_user.socket.on("game_playerstate")
-    # def playerstate_parse(json: dict):
+    # @_user.socket.on("game_player_state")
+    # def player_state_parse(json: dict):
     #    state = room["game"].players[json["uid"]].get_player_state()
     #    state = WebGame.handle_keys(json, state)
 
-    #    quickflask.return_socket(state)
+    #    quick_flask.return_socket(state)
 
     @_user.socket.on("game_action")
     def action_parse(ty, *args):
@@ -86,9 +86,9 @@ class WebGame:
              setting template_url to the appropriate filename. (should be in templates/game/rooms)
         You can then put whatever else you want here
          """
-        assert _initiated, "run webgame.init(user, room) first"
+        assert _initiated, "run web_game.init(user, room) first"
 
-        self.template_url = ""  # Should be set to the html of the room that recives the socket.
+        self.template_url = ""  # Should be set to the html of the room that receives the socket.
 
         self.players = {}
         self.max_players = None
@@ -112,15 +112,16 @@ class WebGame:
         return [_user.users[player] for player in self.players]
 
     def get_users_attr(self, key):
-        """same as the above except gets a specific attribute of all the users, for example get_users_attr(name) for names"""
+        """same as the above except gets a specific attribute of all the users, for example get_users_attr(name) for
+        names """
         return [_user.users[player][key] for player in self.players]
 
     def get_state(self):
-        """Should be overloaded with a dict of all variables that need to be retrived by the client"""
+        """Should be overloaded with a dict of all variables that need to be retrieved by the client"""
         return self.__dict__
 
     def send_state(self, keys: list = None):
-        """Sends the gamestate to the clientside javascript to update any values in the state that changed
+        """Sends the game_state to the clientside javascript to update any values in the state that changed
         Keys can be used to send only specific values if you want to save bandwidth.
         """
         if keys is None:
@@ -160,8 +161,8 @@ class WebGame:
 
 
 class WebGamePlayer:
-    """todo Not yet fully implimented
-    can be used to easily impliment player specific functions and store player variables. e.g. adding a player score"""
+    """todo Not yet fully implemented
+    can be used to easily implement player specific functions and store player variables. e.g. adding a player score"""
 
     def __init__(self, game):
         self.game = game
@@ -170,5 +171,5 @@ class WebGamePlayer:
         return self.game
 
     def get_state(self):
-        """should be overloaded to return a dict with all the data relavent to this player in game"""
+        """should be overloaded to return a dict with all the data relevant to this player in game"""
         return self.__dict__
