@@ -6,6 +6,7 @@ import flask
 from flask import request
 import quick_flask
 import shut_the_box
+import web_game
 
 GAME_LIST = [shut_the_box.ShutTheBox]
 
@@ -31,7 +32,7 @@ def make_server(m_game_list=None):  # In a function to avoid globals
         "in_room": lambda: user["room"] is not None,
     })
 
-    shut_the_box.init(user, room)
+    web_game.init(user, room)
 
     def redirect_login():
         if not user.b_logged_in():
@@ -107,6 +108,9 @@ def make_server(m_game_list=None):  # In a function to avoid globals
 
     @user.socket.on("join")
     def joining(room_id):
+        if room_id not in room.rooms:  # Catch if the player tries to join a non existent room
+            return
+
         if room.rooms[room_id]["open"]:
             room.join_room(room_id)
             user["player_id"] = room["game"].new_player()

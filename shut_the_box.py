@@ -3,7 +3,7 @@
 # Please not there are more functions you can see the descriptions of in "web_game.py".
 
 import web_game
-from web_game import init  # This should not be removed because it is called in the server function.
+#from web_game import init  # This should not be removed because it is called in the server function.
 from flask import session
 import random
 
