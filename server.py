@@ -5,10 +5,10 @@
 import flask
 from flask import request
 import quick_flask
-import shut_the_box
+import web_games
 import web_game
 
-GAME_LIST = [shut_the_box.ShutTheBox]
+GAME_LIST = [web_games.ShutTheBox, web_games.BottomCards]
 
 
 def make_server(m_game_list=None):  # In a function to avoid globals
@@ -87,6 +87,9 @@ def make_server(m_game_list=None):  # In a function to avoid globals
         redirect = redirect_login()
         if redirect is not None:
             return redirect
+        if user["room"] is None:
+            flask.abort(401)
+
         return header_footer("game/rooms/%s" % room["game"].template_url, players=room["game"].get_users_attr("name"))
 
     @user.socket.on("create")

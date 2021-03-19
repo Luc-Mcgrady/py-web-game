@@ -3,10 +3,11 @@
 # Please not there are more functions you can see the descriptions of in "web_game.py".
 
 import web_game
-#from web_game import init  # This should not be removed because it is called in the server function.
 from flask import session
 import random
 
+
+# -- SHUT THE BOX
 
 def get_possible_addends_sum(
         arr):
@@ -36,36 +37,14 @@ class Box:
         self.locked = True
 
 
-class ShutTheBox(web_game.WebGame):
-    @staticmethod
-    def title():
-        return "Shut The Box"
-
+class TurnBasedWebGame(web_game.WebGame):
     def __init__(self):
         super().__init__()
-        self.template_url = "shut_the_box.html"
 
-        self.boxes = None
-        # variables used for game itself
         self.player_turn = session["uid"]
-        # Also feel like a player turn system is needed although not every game uses one.
-        self.target = None
-
-        self.set_max_players(
-            2)  # Used for lobby to make the game disappear and un-joinable when full, todo make room grey out instead
-
         self.min_players = 2
-        # Used for starting the game
         self.started = False
-        # I think that most games need a started element so im considering moving it into the main library
-
-        self.settings = {  # These settings will be able to be changed by the player in a future version (todo)
-            "boxes": 9,
-        }
-
-    def random_target(self):
-        """Rolls 2, 6 sided dice and sets the target to the sum"""
-        self.target = random.randint(1, 6) + random.randint(1, 6)
+        # Used for starting the game
 
     def player_check(self):
         """Checks that the player who's turn it is is still in the game"""
@@ -78,20 +57,49 @@ class ShutTheBox(web_game.WebGame):
         self.player_turn = player_list[
             (player_list.index(self.player_turn) + 1) % len(player_list)]  # Move on to the next player
         # ^ I haven't a clue why its this complicated to move to the next value in the players dict
-        # todo Make this a library function
 
     def game_start(self):
-        """Starts (or restarts) the game"""
+        """Starts (or restarts) the game, super should be put after code"""
+
         self.started = True
-        self.random_target()
-        self.boxes = [Box(a) for a in range(1, 10)]
         self.send_state()
         self.emit_room_event("cancel_reset")
 
     def player_leave(self, uid):
         """This is an inherited function which is called whenever the player leaves the room"""
-        super().player_leave(uid)
         self.player_check()
+        super().player_leave(uid)
+
+
+class ShutTheBox(TurnBasedWebGame):
+    @staticmethod
+    def title():
+        return "Shut The Box"
+
+    def __init__(self):
+        super().__init__()
+        self.template_url = "shut_the_box.html"
+
+        self.boxes = None
+        # variables used for game itself
+        self.target = None
+
+        self.set_max_players(
+            2)  # Used for lobby to make the game disappear and un-joinable when full, todo make room grey out instead
+
+        self.settings = {  # These settings will be able to be changed by the player in a future version (todo)
+            "boxes": 9,
+        }
+
+    def random_target(self):
+        """Rolls 2, 6 sided dice and sets the target to the sum"""
+        self.target = random.randint(1, 6) + random.randint(1, 6)
+
+    def game_start(self):
+        """Starts (or restarts) the game"""
+        self.random_target()
+        self.boxes = [Box(a) for a in range(1, 10)]
+        super().game_start()
 
     def new_player(self):
         """This is an inherited function which is called whenever a player joins the room"""
@@ -156,4 +164,132 @@ class ShutTheBox(web_game.WebGame):
                 "target": self.target,
                 "turn_name": web_game.get_user().users[self.player_turn]["name"],
                 "turn_uid": self.player_turn,
+                }
+
+
+# -- BOTTOM CARDS
+
+def cycle_array(arr: list):
+    if len(arr) == 0:
+        return []
+
+    arr.append(arr.pop(0))
+    return arr
+
+
+class BottomCard:
+    def __init__(self, title: str, attributes: dict):
+        self.title = title
+        self.attributes = attributes
+
+    def __getitem__(self, item):
+        try:
+            return self.attributes[item]
+        except KeyError:
+            return 0
+
+    def get_dict(self):
+        return {"title": self.title, "attributes": self.attributes}
+
+
+DEFAULT_DECK = [
+    BottomCard("bob", {"coolness": 20, "niceness": 30}),
+    BottomCard("joe", {"coolness": 10, "niceness": 31}),
+    BottomCard("john", {"coolness": 15, "niceness": 29}),
+]
+
+
+class BottomCards(TurnBasedWebGame):
+    @staticmethod
+    def title():
+        return "Bottom Cards"
+
+    def __init__(self):
+        super().__init__()
+        self.template_url = "bottom_cards.html"
+
+        self.deck = DEFAULT_DECK
+        self.player_hands = {}
+
+    def new_player(self):
+        super().new_player()
+        self.deal_deck()
+        self.send_state()
+
+    def deal_deck(self):
+        player_uid_list = list(self.players.keys())
+        self.player_hands = {k: [] for k in player_uid_list}
+
+        for i, card in enumerate(self.deck):  # Deal the deck to the players
+            self.player_hands[player_uid_list[i % len(player_uid_list)]].append(card)
+
+        print(self.player_hands)
+
+    def game_start(self):
+        super().game_start()
+        self.close_room()
+        self.deal_deck()
+
+    def action_handle(self, ty, *args):
+        if not self.started and ty == "game_start" and len(self.players) >= self.min_players:
+            self.game_start()
+            return
+        elif not self.started:
+            pass
+        elif ty == "selected_category":
+
+            if self.player_turn != session["uid"]:  # verify its the players turn
+                return
+
+            category = args[0]
+
+            alive_hands = [(k, v) for k, v in self.player_hands.items() if len(v) > 0 and k != self.player_turn]
+            # get the hands of players who are still alive
+            held_cards = [(self.get_users()[k]["name"], v[0]) for k, v in alive_hands]  # get the "challenge cards"
+            # Used to display the results
+
+            played_card = self.player_hands[self.player_turn][0]
+            to_beat = played_card[category]
+
+            for key, hand in alive_hands:  # Find people who lost the round
+
+                if hand[0][category] < to_beat:
+                    self.player_hands[self.player_turn].append(
+                        self.player_hands[key].pop(0)
+                    )
+
+            self.emit_room_event('results', {
+                "played_card": played_card.get_dict(),
+                "played_category": category,
+                "challenge_cards": {k: v.get_dict() for k, v in held_cards}
+            })
+
+            print(self.player_hands)
+            self.next_turn()
+
+            self.player_hands = {k: cycle_array(v) for k, v in self.player_hands.items()}  # Rotate the hands
+
+    def next_turn(self):
+        super().next_turn()
+        if len(self.player_hands[self.player_turn]) == 0:  # Don't let losers have a turn
+            self.next_turn()
+
+    def player_leave(self, uid):
+        self.player_hands.pop(uid)
+        super().player_leave(uid)
+
+    def get_state(self):
+
+        users = self.get_users_dict()
+        scores = {users[k]["name"]: len(v) for k, v in self.player_hands.items()}
+        if self.player_turn in self.player_hands:  # Obsolete sanity check
+            active_card = self.player_hands[self.player_turn][0].get_dict()
+        else:
+            self.player_check()
+            active_card = None
+
+        return {"player_names": self.get_users_attr("name"),
+                "turn_name": users[self.player_turn]["name"],
+                "player_scores": scores,
+                "active_card": active_card,
                 }

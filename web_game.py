@@ -1,8 +1,10 @@
 import quick_flask
 from flask import session
 
-_user = None
-_room = None
+# noinspection PyTypeChecker
+_user: quick_flask.UserBase = None
+# noinspection PyTypeChecker
+_room: quick_flask.RoomBase = None
 _initiated = False
 
 
@@ -51,11 +53,11 @@ def init(user: quick_flask.UserBase, room: quick_flask.RoomBase,
     _initiated = True
 
 
-def get_room():
+def get_room() -> quick_flask.RoomBase:
     return _room
 
 
-def get_user():
+def get_user() -> quick_flask.UserBase:
     return _user
 
 
@@ -110,6 +112,10 @@ class WebGame:
     def get_users(self):
         """Gets the non game attributes of the users playing the game, mostly useful for names"""
         return [_user.users[player] for player in self.players]
+
+    def get_users_dict(self):
+        """Gets the non game attributes of the users formatted as a dict with the key of the user id"""
+        return {player: _user.users[player] for player in self.players}
 
     def get_users_attr(self, key):
         """same as the above except gets a specific attribute of all the users, for example get_users_attr(name) for
