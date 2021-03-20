@@ -216,24 +216,26 @@ class BottomCards(TurnBasedWebGame):
         self.deal_deck()
         self.send_state()
 
-    def deal_deck(self):
+    def deal_deck(self, shuffle: bool = False):
         player_uid_list = list(self.players.keys())
         self.player_hands = {k: [] for k in player_uid_list}
+
+        if shuffle:
+            random.shuffle(self.deck)
 
         for i, card in enumerate(self.deck):  # Deal the deck to the players
             self.player_hands[player_uid_list[i % len(player_uid_list)]].append(card)
 
-        print(self.player_hands)
-
     def game_start(self):
         super().game_start()
         self.close_room()
-        self.deal_deck()
+        self.deal_deck(True)
+        self.send_state()
 
     def action_handle(self, ty, *args):
         if not self.started and ty == "game_start" and len(self.players) >= self.min_players:
             self.game_start()
-            return
+            self.send_state(["game_started"])
         elif not self.started:
             pass
         elif ty == "selected_category":
@@ -258,13 +260,15 @@ class BottomCards(TurnBasedWebGame):
                         self.player_hands[key].pop(0)
                     )
 
+            users = self.get_users_dict()
+
             self.emit_room_event('results', {
                 "played_card": played_card.get_dict(),
                 "played_category": category,
+                "played_player_name": users[self.player_turn]["name"],
                 "challenge_cards": {k: v.get_dict() for k, v in held_cards}
             })
 
-            print(self.player_hands)
             self.next_turn()
 
             self.player_hands = {k: cycle_array(v) for k, v in self.player_hands.items()}  # Rotate the hands
@@ -282,14 +286,14 @@ class BottomCards(TurnBasedWebGame):
 
         users = self.get_users_dict()
         scores = {users[k]["name"]: len(v) for k, v in self.player_hands.items()}
-        if self.player_turn in self.player_hands:  # Obsolete sanity check
-            active_card = self.player_hands[self.player_turn][0].get_dict()
-        else:
-            self.player_check()
-            active_card = None
+
+        self.player_check()
+        active_card = self.player_hands[self.player_turn][0].get_dict()
 
         return {"player_names": self.get_users_attr("name"),
                 "turn_name": users[self.player_turn]["name"],
+                "turn_uid": self.player_turn,
                 "player_scores": scores,
                 "active_card": active_card,
+                "game_started": self.started,
                 }

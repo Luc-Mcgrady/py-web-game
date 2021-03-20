@@ -1,7 +1,21 @@
 
 <body>
-    <input type="button" value="start game" onclick="socket.emit('game_action','game_start')">
+    <h3>Player deck sizes:</h3>
+    <p id="scores"></p>
+    <h3>Current Player:</h3>
+    <p id="player_name"></p>
+
+    <input id="btn_start" type="button" value="start game" onclick="socket.emit('game_action','game_start')">
+
+    <table id="display_table"></table>
 </body>
 <head>
+
+    <script
+            src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+            crossorigin="anonymous">
+    </script>
     <script src="/static/js/bottom_cards.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/bottom_cards.css">
 </head>

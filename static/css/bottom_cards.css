@@ -1,0 +1,6 @@
+*.cell_fail {
+    background-color: red;
+}
+*.cell_survive {
+    background-color: green;
+}
