@@ -151,10 +151,9 @@ class ShutTheBox(TurnBasedWebGame):
                 # Return the player who its not the current turn of for the win screen
                 # p.s. This should probably be done through get_state although there is no harm in it.
                 self.started = False
-            else:
-                self.send_state()
 
             self.next_turn()
+            self.send_state()
 
     def get_state(self):
         """This is an inherited function that represents all the variables that are in play at a given time that
