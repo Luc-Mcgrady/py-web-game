@@ -5,6 +5,7 @@
 import web_game
 from flask import session
 import random
+import json
 
 
 # -- SHUT THE BOX
@@ -139,17 +140,21 @@ class ShutTheBox(TurnBasedWebGame):
 
             [self.boxes[a - 1].lock() for a in choices]  # Lock the boxes that the player chose
             self.random_target()  # Set a new target
-            self.next_turn()
 
             if 0 == len([a for a in get_possible_addends_sum([a.value for a in self.boxes if not a.locked]) if
                          a[1] == self.target]):  # If there are no possible answers
-                self.emit_room_event("game_over",
-                                     self.get_users()[self.player_turn - 1]["name"])
+
+                winner = [k for k, v in self.get_users_dict() if k != self.player_turn][0]
+                # Gets the winner by finding the player who its not the turn of
+
+                self.emit_room_event("game_over", winner["name"])
                 # Return the player who its not the current turn of for the win screen
                 # p.s. This should probably be done through get_state although there is no harm in it.
                 self.started = False
             else:
                 self.send_state()
+
+            self.next_turn()
 
     def get_state(self):
         """This is an inherited function that represents all the variables that are in play at a given time that
@@ -178,7 +183,11 @@ def cycle_array(arr: list):
 
 
 class BottomCard:
-    def __init__(self, title: str, attributes: dict):
+    @staticmethod
+    def list_to(in_: list):
+        return [BottomCard(a["title"], a["attributes"]) for a in in_]
+
+    def __init__(self, title: str = None, attributes: dict = None):
         self.title = title
         self.attributes = attributes
 
@@ -191,12 +200,12 @@ class BottomCard:
     def get_dict(self):
         return {"title": self.title, "attributes": self.attributes}
 
+    def from_dict(self, in_: dict):
+        self.title = in_["title"]
+        self.attributes = in_["attributes"]
 
-DEFAULT_DECK = [
-    BottomCard("bob", {"coolness": 20, "niceness": 30}),
-    BottomCard("joe", {"coolness": 10, "niceness": 31}),
-    BottomCard("john", {"coolness": 15, "niceness": 29}),
-]
+
+DEFAULT_DECK = BottomCard.list_to(json.load(open("json/bottom_cards.json", "r")))
 
 
 class BottomCards(TurnBasedWebGame):
@@ -247,7 +256,7 @@ class BottomCards(TurnBasedWebGame):
 
             alive_hands = [(k, v) for k, v in self.player_hands.items() if len(v) > 0 and k != self.player_turn]
             # get the hands of players who are still alive
-            held_cards = [(self.get_users()[k]["name"], v[0]) for k, v in alive_hands]  # get the "challenge cards"
+            held_cards = [(self.get_users_dict()[k]["name"], v[0]) for k, v in alive_hands]  # get the "challenge cards"
             # Used to display the results
 
             played_card = self.player_hands[self.player_turn][0]
@@ -272,6 +281,7 @@ class BottomCards(TurnBasedWebGame):
             self.next_turn()
 
             self.player_hands = {k: cycle_array(v) for k, v in self.player_hands.items()}  # Rotate the hands
+            self.send_state()
 
     def next_turn(self):
         super().next_turn()

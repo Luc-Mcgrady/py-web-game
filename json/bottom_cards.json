@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Bob",
+    "attributes": {
+      "coolness": 10,
+      "niceness": 31
+    }
+  },
+  {
+    "title": "Joe",
+    "attributes": {
+      "coolness": 15,
+      "niceness": 12
+    }
+  },
+  {
+    "title": "John",
+    "attributes": {
+      "coolness": 20,
+      "niceness": 29
+    }
+  }
+]
