@@ -2,6 +2,7 @@ import flask
 from flask import session
 from copy import deepcopy
 import flask_socketio as f_socketio
+from os import urandom
 
 
 # Todo add a sweep function which automatically logs out users and kicks them out of rooms if they have been afk (not
@@ -238,7 +239,7 @@ def return_socket(ty, *args, **kwargs):
     """Returns a f_socketio message to solely the user that sent it.
     For this function to work properly there must not be any negative f_socketio rooms"""
     assert "room" not in kwargs
-    return_room = -session["uid"]  # Unique room just in case, untested if just -1 would work
+    return_room = urandom(4)  # Unique room just in case
 
     f_socketio.join_room(
         return_room)

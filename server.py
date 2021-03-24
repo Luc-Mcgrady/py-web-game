@@ -62,11 +62,11 @@ def make_server(m_game_list=None):  # In a function to avoid globals
 
     @server.route("/login", methods=["GET", "POST"])
     def login():
+        if user.b_logged_in():
+            return flask.redirect("index")
         if request.method == "POST":
             user.new_logon()
             user["name"] = request.form["name"]
-        if user.b_logged_in():
-            return flask.redirect("index")
         return header_footer("login.html", [redirect_room])
 
     @server.route("/play/rooms")
