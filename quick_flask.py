@@ -18,6 +18,7 @@ class UserBase:
 
         self.server = flask_server
         self.user_keys = user_defaults
+        self.user_keys["auth"] = ""
         self.users = {}  # Dict as when a user logs off their room_id wont change
         self.socket = f_socketio.SocketIO(self.server)
 
@@ -33,6 +34,11 @@ class UserBase:
         new_uid = len(self.users)
         self.users[new_uid] = self.user_keys.copy()
         session["uid"] = new_uid
+
+        auth = urandom(6)
+        session["auth"] = auth
+        self.users[new_uid]["auth"] = auth
+
         return self.users[new_uid]
 
     @staticmethod
@@ -45,6 +51,7 @@ class UserBase:
     def b_logged_in(self):
         """ Returns true if there is a player logged in the current browser, otherwise returns false
         better than if self.current_user() is none because it is uses cookies rather than serverside storage"""
+        self.auth_check()
         return "uid" in session and session["uid"] in self.users
 
     def current_user_set_attribute(self, key, val, local_storage: bool = False):
@@ -82,6 +89,11 @@ The fix would be to add "{key}" to the default template""".format(key=key)
     def __setitem__(self, key, value):
         """Sets an attribute of the current player"""
         self.current_user_set_attribute(key, value)
+
+    def auth_check(self):
+        """Logs a user out if they have an invalid authentication cookie"""
+        if "auth" in session and self["auth"] != session["auth"]:
+            session["uid"] = None
 
 
 class RoomBase:
