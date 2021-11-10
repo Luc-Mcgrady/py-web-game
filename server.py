@@ -132,5 +132,5 @@ def make_server(m_game_list=None):  # In a function to avoid globals
 
 socket, app = make_server(GAME_LIST)
 if __name__ == '__main__':
-    print("Server running on http://localhost:5000")
-    socket.run(app)
+    print("Server running on http://0.0.0.0:80")
+    socket.run(app,"0.0.0.0",80)
