@@ -67,6 +67,8 @@ def make_server(m_game_list=None):  # In a function to avoid globals
         if request.method == "POST":
             user.new_logon()
             user["name"] = request.form["name"]
+            return flask.redirect("index")
+            
         return header_footer("login.html", [redirect_room])
 
     @server.route("/play/rooms")
@@ -88,7 +90,7 @@ def make_server(m_game_list=None):  # In a function to avoid globals
         if redirect is not None:
             return redirect
         if user["room"] is None:
-            flask.abort(401)
+            flask.redirect("/play/rooms")
 
         return header_footer("game/rooms/%s" % room["game"].template_url, players=room["game"].get_users_attr("name"))
 

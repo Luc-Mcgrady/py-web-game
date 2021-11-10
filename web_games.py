@@ -144,15 +144,13 @@ class ShutTheBox(TurnBasedWebGame):
             if 0 == len([a for a in get_possible_addends_sum([a.value for a in self.boxes if not a.locked]) if
                          a[1] == self.target]):  # If there are no possible answers
 
-                winner = [k for k, v in self.get_users_dict() if k != self.player_turn][0]
-                # Gets the winner by finding the player who its not the turn of
-
-                self.emit_room_event("game_over", winner["name"])
+                self.emit_room_event("game_over", self.get_users_dict()[self.player_turn]["name"])
                 # Return the player who its not the current turn of for the win screen
                 # p.s. This should probably be done through get_state although there is no harm in it.
                 self.started = False
-            else:
-                self.send_state()
+
+            self.next_turn()
+            self.send_state()
 
             self.next_turn()
 
@@ -281,6 +279,7 @@ class BottomCards(TurnBasedWebGame):
             self.next_turn()
 
             self.player_hands = {k: cycle_array(v) for k, v in self.player_hands.items()}  # Rotate the hands
+            self.send_state()
 
     def next_turn(self):
         super().next_turn()
